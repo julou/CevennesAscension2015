@@ -1,0 +1,97 @@
+---
+title: "Randonnée en Cévènnes"
+author: "Timothée Flutre et Thomas Julou"
+date: '`r as.character(format(Sys.Date(), format="%d/%m/%Y"))`'
+output:
+  html_document:
+    toc: false
+    toc_depth: 3
+    number_sections: TRUE
+  pdf_document:
+    toc: false
+    toc_depth: 3
+    number_sections: TRUE
+---
+
+<!--
+This R chunk is used to set up important options and load required packages.
+-->
+```{r setup, include=FALSE}
+R.v.maj <- as.numeric(R.version$major)
+R.v.min.1 <- as.numeric(strsplit(R.version$minor, "\\.")[[1]][1])
+if(R.v.maj < 2 || (R.v.maj == 2 && R.v.min.1 < 15))
+  stop("requires R >= 2.15", call.=FALSE)
+
+suppressPackageStartupMessages(library(knitr))
+opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE)#, fig.width=12, fig.height=8, fig.path=figures/")
+```
+
+Grâce aux communités du libre, nous pouvons bénéficier des données de la base [OpenStreetMap](https://www.openstreetmap.org/) ainsi que du logiciel [R](http://www.r-project.org/) avec le paquet [OpenStreetMap](http://cran.r-project.org/web/packages/OpenStreetMap/index.html):
+```{r load_pkg}
+suppressPackageStartupMessages(library(OpenStreetMap))
+map.info <- getMapInfo()
+```
+
+Commençons par récupérez les coordonnées de notre carte via [ce site](http://www.itouchmap.com/latlong.html):
+```{r load_maps}
+maps <- list()
+for(type in c("osm", "bing"))
+  maps[[type]] <- openmap(upperLeft=c(44.248503, 3.36216),
+                          lowerRight=c(44.04981, 3.701706),
+                          type=type)
+```
+
+Maintenant, préparons les étapes ([ce site](http://www.itilog.com/) est également utile):
+```{r def_stages}
+stages <- SpatialPointsDataFrame(
+    coords=rbind(c(3.44429, 44.064497),
+        c(3.4300100, 44.180863),
+        c(3.619266, 44.227533),
+        c(3.6327039, 44.1256689),
+        c(3.5813450, 44.1213738),
+        c(3.4771069, 44.115736)),
+    data=data.frame(name=c("Dourbies",
+                        "Meyrueis",
+                        "L'Hospitalet",
+                        "Aire de Cote",
+                        "Mont Aigoual",
+                        "Camprieu"),
+        stringsAsFactors=FALSE),
+    proj4string=CRS("+proj=longlat +ellps=WGS84"))
+stages.2 <- spTransform(stages,
+                        CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 \
++lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs"))
+```
+
+Puis faisons-nous une idée de l'échelle en prenant la distance à vol d'oiseau Dourbies-Camprieu comme exemple (Google Maps indique environ 11 km en marchant sur une route plus ou moins directe):
+```{r scale}
+tmp <- Line(coordinates(stages)[c(1,6),])
+LineLength(tmp, longlat=TRUE) # in km
+l.dc <- Line(coordinates(stages.2)[c(1,6),])
+sl.dc <- SpatialLines(list(Lines(list(l.dc), ID="Dourbies-Camprieu")),
+                      proj4string=CRS(proj4string(stages.2)))
+mp.dc <- getSpatialLinesMidPoints(sl.dc)
+```
+
+Enfin, traçons la carte et ajoutons-y les étapes et l'échelle:
+```{r plot}
+i <- 2 # 1:osm 2=bing
+plot(maps[[i]], raster=TRUE)
+plot(stages.2, add=TRUE, col="red", lwd=4, cex=1)
+text(x=coordinates(stages.2)[,1],
+     y=coordinates(stages.2)[,2],
+     labels=stages.2[["name"]],
+     adj=1, pos=3, col="red", lwd=1.5)
+plot(sl.dc, add=TRUE, col="black", lty=2)
+text(x=coordinates(mp.dc)[1,1],
+     y=coordinates(mp.dc)[1,2],
+     labels=c("6.3 km"),
+     adj=1, pos=3, col="black")
+```
+
+Le résultat n'est pas trop mal, même si ça ne remplace pas les [cartes IGN](http://loisirs.ign.fr/cartes.html) TOP 25.
+
+
+```{r info}
+print(sessionInfo(), locale=FALSE)
+```
