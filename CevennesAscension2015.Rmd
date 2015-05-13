@@ -90,7 +90,8 @@ text(x=coordinates(mp.dc)[1,1],
 ```
 
 Le résultat n'est pas trop mal, même si ça ne remplace pas les [cartes IGN](http://loisirs.ign.fr/cartes.html) TOP 25.
-
+[Ce site](http://jgn.superheros.fr/fr/) est bien pratique pour visualiser et imprimer la carte correspondant exactement à votre itinéraire.
+Si vous disposez de votre itinéraire au format "gpx", rien de mieux que [ce site](http://www.visugpx.com/).
 
 ```{r info}
 print(sessionInfo(), locale=FALSE)
